@@ -44,7 +44,7 @@ int main() {
     std::cout << b.get<std::string>()<< std::endl;
 
     try {
-        std::cout << a.get<std::string>() << std::endl; // Тут будет исключение, так как тип не совпадает
+        std::cout << a.get<std::string>() << std::endl;
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
     }
