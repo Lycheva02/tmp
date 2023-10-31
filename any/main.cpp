@@ -6,8 +6,6 @@
 
 class Any {
 public:
-    Any() : data(nullptr) {}
-
     template <typename T>
     Any(T value) : data(new Holder<T>(value)) {}
 
