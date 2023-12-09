@@ -46,6 +46,8 @@ void deserialize(std::string bin_file, std::string output_file) {
         bin_f.read(reinterpret_cast<char *>(&weight), sz8);
         bin_f.read(reinterpret_cast<char *>(&number), sz32);
         value = weight;
+        if (!bin_f)
+            break;
         for (size_t i = 0; i < number; ++i) {
             bin_f.read(reinterpret_cast<char *>(&a), sz32);
             bin_f.read(reinterpret_cast<char *>(&b), sz32);
