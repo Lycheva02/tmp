@@ -4,63 +4,75 @@
 #include <iterator>
 #include <unordered_map>
 #include <vector>
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <vector>
+#include <cstdint>
+#include <sstream>
 
-void serialize(std::string input_file, std::string bin_file) {
-    std::ifstream tsv_f(input_file, std::ios::in);
-    std::ofstream bin_f(bin_file, std::ios::binary);
-    uint32_t a, b, value, number;
-    uint8_t weight;
+void serialize(const std::string& input_file, const std::string& bin_file) {
     size_t sz8 = sizeof(uint8_t);
     size_t sz32 = sizeof(uint32_t);
-    std::unordered_map<uint32_t, std::vector<std::pair<uint32_t, uint32_t>>> mp;
+    
+    std::ifstream tsv_f(input_file, std::ios::in);
+    std::ofstream bin_f(bin_file, std::ios::binary);
 
-    while (tsv_f >> a >> b >> value) {  // не приводим к uint8_t тут, потому что в следующем цикле всё равно возникают проблемы с приведением типа val
-        mp[value].push_back(std::make_pair(a, b));
-    }
-    tsv_f.close();
+    std::unordered_map<uint32_t, std::vector<std::pair<uint32_t, uint32_t>>> graph;
+    uint32_t vertex1, vertex2, vertex, value, edgesCount;
+    uint8_t weight;
 
-    for (auto &[val, prs]: mp) {
-        weight = val;
-        number = prs.size();
-        bin_f.write(reinterpret_cast<char *>(&weight), sz8);
-        bin_f.write(reinterpret_cast<char *>(&number), sz32);
-        for (auto &[a, b]: prs) {
-            bin_f.write(reinterpret_cast<char *>(&a), sz32);
-            bin_f.write(reinterpret_cast<char *>(&b), sz32);
+    while (tsv_f >> vertex1 >> vertex2 >> value) {
+        // Учитываем ребро только в одном направлении
+        if (vertex1 < vertex2) {
+            graph[vertex1].push_back(std::make_pair(vertex2, value));
+        } else {
+            graph[vertex2].push_back(std::make_pair(vertex1, value));
         }
     }
 
+    for (auto& [v, prs] : graph) {
+        vertex = v;
+        edgesCount = prs.size();
+
+        bin_f.write(reinterpret_cast<char*>(&vertex), sz32);
+        bin_f.write(reinterpret_cast<char*>(&edgesCount), sz32);
+
+        for (auto& [a, b] : prs) {
+            bin_f.write(reinterpret_cast<char*>(&a), sz32);
+            bin_f.write(reinterpret_cast<char*>(&b), sz8);
+        }
+    }
+
+    tsv_f.close();
     bin_f.close();
 }
 
-void deserialize(std::string bin_file, std::string output_file) {
+void deserialize(const std::string& bin_file, const std::string& output_file) {
     std::ifstream bin_f(bin_file, std::ios::binary);
     std::ofstream tsv_f(output_file);
-    uint32_t a, b, value, number;
+
+    uint32_t vertex, edgesCount, adjacentVertex, value;
     uint8_t weight;
     size_t sz8 = sizeof(uint8_t);
     size_t sz32 = sizeof(uint32_t);
-    bool not_first_line = false;
 
     while (bin_f) {
-        bin_f.read(reinterpret_cast<char *>(&weight), sz8);
-        bin_f.read(reinterpret_cast<char *>(&number), sz32);
-        value = weight;
+        bin_f.read(reinterpret_cast<char*>(&vertex), sz32);
+        bin_f.read(reinterpret_cast<char*>(&edgesCount), sz32);
         if (!bin_f)
             break;
-        for (size_t i = 0; i < number; ++i) {
-            bin_f.read(reinterpret_cast<char *>(&a), sz32);
-            bin_f.read(reinterpret_cast<char *>(&b), sz32);
-            if (not_first_line)
-                tsv_f << std::endl;
-            else
-                not_first_line = true;
-            tsv_f << a << '\t' << b << '\t' << value;
+
+        for (uint32_t i = 0; i < edgesCount; ++i) {
+            bin_f.read(reinterpret_cast<char*>(&adjacentVertex), sz32);
+            bin_f.read(reinterpret_cast<char*>(&weight), sz8);
+            value = weight;
+
+            tsv_f << vertex << "\t" << adjacentVertex << "\t" << value << std::endl;
         }
     }
-
-    bin_f.close();
     tsv_f.close();
+    bin_f.close();
 }
 
 int main(int argc, char **argv) {
