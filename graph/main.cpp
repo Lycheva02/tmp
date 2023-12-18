@@ -68,7 +68,7 @@ void deserialize(const std::string& bin_file, const std::string& output_file) {
             bin_f.read(reinterpret_cast<char*>(&weight), sz8);
             value = weight;
 
-            tsv_f << vertex << "\t" << adjacentVertex << "\t" << value << std::endl;
+            tsv_f << vertex << "\t" << adjacentVertex << "\t" << value << "\n";
         }
     }
     tsv_f.close();
